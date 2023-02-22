@@ -1,8 +1,9 @@
+from django.contrib.auth import authenticate
 from django.shortcuts import render
 from rest_framework import generics, permissions, status
 
 from register.models import CustomerUser
-from register.serializers import RegistrationSerializer
+from register.serializers import RegistrationSerializer, UserLoginSerializer
 from rest_framework.response import Response
 
 
@@ -48,3 +49,23 @@ class RegistrationAPIView(generics.GenericAPIView):
             },
                 status=status.HTTP_200_OK
             )
+
+class UserLoginView(generics.GenericAPIView):
+
+    serializer_class = UserLoginSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            email = serializer.data.get('email')
+            password = serializer.data.get('password')
+            user = authenticate(email=email, password=password)
+            if user:
+                return Response({
+                    'Message': serializer.data},
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response({'Errors': {'non_field_errors': ['Email or Password is not valid or your account is not active ']}}, status=status.HTTP_404_NOT_FOUND)
