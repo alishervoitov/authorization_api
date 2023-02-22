@@ -7,7 +7,17 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerUser
-        fields = "__all__"
+        fields = (
+            'username',
+            'full_name',
+            'email',
+            'password',
+            'country',
+            'company_name',
+            'user_type',
+            'phone_number',
+            'corporate_number'
+        )
 
 class UserLoginSerializer(serializers.ModelSerializer):
 
