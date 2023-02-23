@@ -1,9 +1,10 @@
 from django.contrib.auth import authenticate
 from django.shortcuts import render
 from rest_framework import generics, permissions, status
+from rest_framework.permissions import IsAuthenticated
 
 from register.models import CustomerUser
-from register.serializers import RegistrationSerializer, UserLoginSerializer
+from register.serializers import RegistrationSerializer, UserLoginSerializer, UserProfileSerializer
 from rest_framework.response import Response
 
 
@@ -69,3 +70,16 @@ class UserLoginView(generics.GenericAPIView):
                 )
             else:
                 return Response({'Errors': {'non_field_errors': ['Email or Password is not valid or your account is not active ']}}, status=status.HTTP_404_NOT_FOUND)
+
+class UserProfileView(generics.GenericAPIView):
+
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+
+        serializer = UserProfileSerializer(request.user)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )

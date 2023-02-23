@@ -28,3 +28,17 @@ class UserLoginSerializer(serializers.ModelSerializer):
             'email',
             'password'
         ]
+
+class UserProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomerUser
+        fields = [
+            'full_name',
+            'email',
+            'country',
+            'company_name',
+            'user_type',
+            'phone_number',
+            'corporate_number',
+        ]
