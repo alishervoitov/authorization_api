@@ -42,3 +42,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'phone_number',
             'corporate_number',
         ]
+
+class ChangePasswordSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomerUser
+        fields = ['password']
