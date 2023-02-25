@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from register.models import CustomerUser
 from register.serializers import RegistrationSerializer, UserLoginSerializer, UserProfileSerializer, \
-    ChangePasswordSerializer
+    ChangePasswordSerializer, EditProfileSerializer
 from rest_framework.response import Response
 
 
@@ -114,5 +114,31 @@ class ChangePasswordView(generics.UpdateAPIView):
             )
         return Response(
             serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+class EditProfileView(generics.GenericAPIView):
+
+    permission_classes = (IsAuthenticated,)
+    serializer_class = EditProfileSerializer
+    queryset = CustomerUser.objects.all()
+
+    def put(self, request, *args, **kwargs):
+
+        pk = kwargs.get('pk', None)
+        if not pk:
+            return Response({'error': 'Method put not allowed'})
+        try:
+            instance = CustomerUser.objects.get(pk=pk)
+        except:
+            return Response({'error': 'Object does not exists'})
+        serializer = EditProfileSerializer(data=request.data, instance=instance)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {
+                'Message': request.data,
+                'Msg': 'Your profile updated succesfully'
+            },
             status=status.HTTP_400_BAD_REQUEST
         )
