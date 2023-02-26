@@ -19,6 +19,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
             'corporate_number'
         )
 
+class VerifySerializer(serializers.ModelSerializer):
+
+    token = serializers.CharField(max_length=555)
+    class Meta:
+        model = CustomerUser
+        fields = ['token']
 class UserLoginSerializer(serializers.ModelSerializer):
 
     email = serializers.EmailField(max_length=255)

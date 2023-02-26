@@ -1,18 +1,32 @@
 from django.contrib.auth import authenticate
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import render
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from register.models import CustomerUser
+from register.renderers import UserRenderer
 from register.serializers import RegistrationSerializer, UserLoginSerializer, UserProfileSerializer, \
     ChangePasswordSerializer, EditProfileSerializer
 from rest_framework.response import Response
 
+from register.utils import Util
 
+
+def get_tokens_for_user(user):
+
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 class RegistrationAPIView(generics.GenericAPIView):
 
     serializer_class = RegistrationSerializer
     permission_classes = [permissions.AllowAny]
+    renderer_classes = [UserRenderer]
 
     def post(self, request, format=None):
 
@@ -46,8 +60,23 @@ class RegistrationAPIView(generics.GenericAPIView):
             )
             user.set_password(password)
             user.save()
+            from django.utils.encoding import force_bytes
+            uid = urlsafe_base64_encode(force_bytes(user.id))
+            token = PasswordResetTokenGenerator().make_token(user)
+            link = 'http://127.0.0.1:8000/auth/user/verify/' + uid + '/' + token + '/'
+            print(link)
+            body = 'Use link below to verify your email ' + link
+            data = {
+                'subject': 'Your verify link',
+                'body': body,
+                'to_email': user.email,
+            }
+            Util.send_email(data)
+
             return Response({
+                'token': get_tokens_for_user(user),
                 'Message': request.data,
+                'Msg': 'We send link to your email for verify',
             },
                 status=status.HTTP_200_OK
             )
