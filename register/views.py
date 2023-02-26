@@ -1,7 +1,13 @@
+from xml.dom import ValidationErr
+
+import jwt
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.shortcuts import render
-from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import smart_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -9,7 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from register.models import CustomerUser
 from register.renderers import UserRenderer
 from register.serializers import RegistrationSerializer, UserLoginSerializer, UserProfileSerializer, \
-    ChangePasswordSerializer, EditProfileSerializer
+    ChangePasswordSerializer, EditProfileSerializer, VerifySerializer
 from rest_framework.response import Response
 
 from register.utils import Util
@@ -63,7 +69,7 @@ class RegistrationAPIView(generics.GenericAPIView):
             from django.utils.encoding import force_bytes
             uid = urlsafe_base64_encode(force_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
-            link = 'http://127.0.0.1:8000/auth/user/verify/' + uid + '/' + token + '/'
+            link = 'http://127.0.0.1:8000/auth/verify/' + uid + '/' + token + '/'
             print(link)
             body = 'Use link below to verify your email ' + link
             data = {
@@ -85,6 +91,7 @@ class UserLoginView(generics.GenericAPIView):
 
     serializer_class = UserLoginSerializer
     permission_classes = [permissions.AllowAny]
+    renderer_classes = [UserRenderer]
 
     def post(self, request):
 
@@ -93,18 +100,50 @@ class UserLoginView(generics.GenericAPIView):
             email = serializer.data.get('email')
             password = serializer.data.get('password')
             user = authenticate(email=email, password=password)
-            if user:
+            if user and user.is_verified:
+                token = get_tokens_for_user(user)
                 return Response({
+                    'token': token,
                     'Message': serializer.data},
                     status=status.HTTP_200_OK
                 )
             else:
                 return Response({'Errors': {'non_field_errors': ['Email or Password is not valid or your account is not active ']}}, status=status.HTTP_404_NOT_FOUND)
 
+class VerificationView(generics.GenericAPIView):
+
+    serializer_class = VerifySerializer
+    permission_classes = [permissions.AllowAny]
+    renderer_classes = [UserRenderer]
+    token_param_config = openapi.Parameter('token', in_=openapi.IN_QUERY, description='Description', type=openapi.TYPE_STRING)
+    @swagger_auto_schema(manual_parameters=[token_param_config])
+    def get(self, request, token, uid):
+        try:
+            id = smart_str(urlsafe_base64_decode(uid))
+            user = CustomerUser.objects.get(id=id)
+            if not PasswordResetTokenGenerator().check_token(user, token):
+                raise ValidationErr('Token is not valid or expired')
+            user.is_verified = True
+            user.save()
+            return Response(
+                {'Message': 'User activated succesfully'},
+                status=status.HTTP_200_OK
+            )
+        except jwt.ExpiredSignatureError as identifier:
+            return Response(
+                {'error': 'Activation expired'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except jwt.exceptions.DecodeError as identifier:
+            return Response(
+                {'error': 'Invalid token'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 class UserProfileView(generics.GenericAPIView):
 
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
+    renderer_classes = [UserRenderer]
 
     def get(self, request, format=None):
 
@@ -118,6 +157,7 @@ class ChangePasswordView(generics.UpdateAPIView):
 
     permission_classes = (IsAuthenticated,)
     serializer_class = ChangePasswordSerializer
+    renderer_classes = [UserRenderer]
 
     def get_object(self, queryset=None):
         obj = self.request.user
@@ -151,6 +191,7 @@ class EditProfileView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = EditProfileSerializer
     queryset = CustomerUser.objects.all()
+    renderer_classes = [UserRenderer]
 
     def put(self, request, *args, **kwargs):
 
