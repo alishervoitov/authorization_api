@@ -15,3 +15,5 @@ Login
 Profile View
 ![img.png](img.png)
 
+Change password
+![img_1.png](img_1.png)
