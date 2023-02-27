@@ -12,3 +12,6 @@ Verification
 Login
 ![img_6.png](img_6.png)
 
+Profile View
+![img.png](img.png)
+
