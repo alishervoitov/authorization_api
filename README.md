@@ -17,3 +17,6 @@ Profile View
 
 Change password
 ![img_1.png](img_1.png)
+
+Edit profile
+![img_2.png](img_2.png)
