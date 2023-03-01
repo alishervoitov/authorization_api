@@ -1,6 +1,12 @@
+from xml.dom import ValidationErr
+
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from rest_framework import serializers
 
 from register.models import CustomerUser
+from register.utils import Util
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -79,3 +85,29 @@ class EditProfileSerializer(serializers.ModelSerializer):
         instance.corporate_number = validated_data.get('corporate_number', instance.corporate_number)
         instance.save()
         return instance
+
+class SendPasswordEmailSerializer(serializers.Serializer):
+
+    email = serializers.EmailField(max_length=255)
+    class Meta:
+        model = CustomerUser
+        fields = ['email']
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        if CustomerUser.objects.filter(email=email).exists():
+            user = CustomerUser.objects.get(email=email)
+            uid = urlsafe_base64_encode(force_bytes(user.id))
+            token = PasswordResetTokenGenerator().make_token(user)
+            link = 'http://127.0.0.1:8000/auth/user/reset-password/'+uid+'/'+token + '/'
+            body = 'Click following link to reset your password' + link
+            data = {
+                'subject': 'Reset your password',
+                'body': body,
+                'to_email': user.email,
+            }
+            Util.send_email(data)
+            return attrs
+
+        else:
+            raise ValidationErr('You are not a registered user')
