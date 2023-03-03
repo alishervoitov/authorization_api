@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework import routers
 
-from register.views import RegistrationAPIView, UserLoginView, UserProfileView, ChangePasswordView, EditProfileView, VerificationView, SendPasswordEmailView
+from register.views import RegistrationAPIView, UserLoginView, UserProfileView, ChangePasswordView, EditProfileView, VerificationView, SendPasswordEmailView, UserPasswordResetView
 
 urlpatterns = [
     path('register/', RegistrationAPIView.as_view(), name='register'),
@@ -11,4 +11,5 @@ urlpatterns = [
     path('change_password/', ChangePasswordView.as_view(), name='change_password'),
     path('edit-profile/', EditProfileView.as_view(), name='edit-profile'),
     path('send-reset-password/', SendPasswordEmailView.as_view(), name="send-reset-password"),
+    path('reset-password/', UserPasswordResetView.as_view(), name='reset-password'),
 ]
