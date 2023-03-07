@@ -23,3 +23,6 @@ Edit profile
 
 Send sms for reset password
 ![img_7.png](img_7.png)
+
+Reset password
+![img_8.png](img_8.png)
